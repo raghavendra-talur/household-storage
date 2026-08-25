@@ -1,0 +1,20 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/homestead ./server"
+  entrypoint = "./tmp/homestead"
+  delay = 500
+  include_dir = ["server"]
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "bin", "node_modules", "client"]
+  exclude_regex = ["_test\\.go"]
+  kill_delay = "200ms"
+  send_interrupt = true
+
+[log]
+  time = false
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true

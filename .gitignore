@@ -1,0 +1,11 @@
+# Local Claude working notes — not part of the published project.
+CLAUDE.md
+
+node_modules/
+bin/
+dist-demo/
+tmp/
+server/dist/public/*
+!server/dist/public/.gitkeep
+*.log
+.DS_Store
