@@ -1232,3 +1232,141 @@ button {
     height: auto;
   }
 }
+
+/* Reset-list quick actions: one-tap return/found next to Move. */
+.row-actions {
+  display: inline-flex;
+  gap: 12px;
+  justify-self: end;
+}
+.row-actions .return-home {
+  color: var(--green);
+}
+
+/* Triage: deal each homeless item a home, one card at a time. */
+.triage-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  border: 1px solid #d8e1d6;
+  background: #e8eee5;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+}
+.triage-banner span {
+  font-size: 22px;
+  color: var(--green);
+}
+.triage-banner b {
+  font-size: 14px;
+}
+.triage-banner small {
+  display: block;
+  color: #5d675f;
+  font-size: 12px;
+}
+.triage-banner em {
+  margin-left: auto;
+  font-style: normal;
+  font-weight: 650;
+  color: var(--green);
+  font-size: 13px;
+}
+.triage {
+  padding: 0 0 22px;
+}
+.triage-card {
+  padding: 14px 25px 0;
+}
+.triage-card h3 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: 24px;
+  margin: 4px 0 10px;
+}
+.triage-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 10px 0 16px;
+}
+.chip {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 99px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+}
+.chip.active {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.triage-places {
+  display: grid;
+  gap: 8px;
+  max-height: 300px;
+  overflow: auto;
+}
+.triage-places > button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+.triage-places > button:hover {
+  border-color: #9db3a2;
+  background: #f3f6f1;
+}
+.triage-places b {
+  font-size: 13px;
+}
+.triage-places small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+.triage-putaway {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 15px 0 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.triage-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.triage-done {
+  min-height: 160px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 8px;
+  color: var(--muted);
+}
+.triage-done span {
+  margin: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sage);
+  color: var(--green);
+  font-size: 16px;
+}

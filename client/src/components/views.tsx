@@ -3,6 +3,7 @@ import {
   address,
   designIssues,
   greeting,
+  limboItems,
   misplacedItems,
   occupancy,
   overloadedPlaces,
@@ -24,9 +25,20 @@ export type Tab = "items" | "places" | "reports";
 export interface ItemActions {
   onMove: (item: Item) => void;
   onEdit: (item: Item) => void;
+  // One-tap "it's back where it belongs": location := home.
+  onReturnHome: (item: Item) => void;
 }
 
-export function Reports({ data, actions }: { data: Data; actions: ItemActions }) {
+export function Reports({
+  data,
+  actions,
+  onStartTriage,
+}: {
+  data: Data;
+  actions: ItemActions;
+  onStartTriage: () => void;
+}) {
+  const homeless = data.items.filter((i) => !i.home).length;
   const misplaced = misplacedItems(data);
   const unknown = unknownItems(data);
   const overloaded = overloadedPlaces(data);
@@ -71,6 +83,19 @@ export function Reports({ data, actions }: { data: Data; actions: ItemActions })
         <Stat value={errors} label="Design checks" note="home & lifecycle rules" good={errors === 0} />
       </div>
 
+      {homeless > 0 && (
+        <button className="triage-banner" onClick={onStartTriage}>
+          <span>⌂</span>
+          <div>
+            <b>
+              {homeless} {homeless === 1 ? "item needs" : "items need"} a home
+            </b>
+            <small>Deal them out one at a time — lifecycle, home, next.</small>
+          </div>
+          <em>Start triage →</em>
+        </button>
+      )}
+
       <div className="two-col">
         <section className="panel">
           <PanelHead title="Reset list" subtitle="Return, locate, or re-home" />
@@ -88,7 +113,18 @@ export function Reports({ data, actions }: { data: Data; actions: ItemActions })
                     </small>
                   </div>
                   <span className="home-label">Home: {address(data, i.home)}</span>
-                  <button onClick={() => actions.onMove(i)}>Move</button>
+                  <span className="row-actions">
+                    {i.home && (
+                      <button
+                        className="return-home"
+                        title="It's back in its home"
+                        onClick={() => actions.onReturnHome(i)}
+                      >
+                        ✓ {i.location === "UNKNOWN" ? "Found" : "Returned"}
+                      </button>
+                    )}
+                    <button onClick={() => actions.onMove(i)}>Move</button>
+                  </span>
                 </div>
               ))}
             </div>
@@ -122,6 +158,8 @@ export function Reports({ data, actions }: { data: Data; actions: ItemActions })
         </section>
       </div>
 
+      <LimboPanel data={data} actions={actions} />
+
       <section className="panel">
         <PanelHead title="Design checks" subtitle="Exact home match and lifecycle legality" />
         {issues.length ? (
@@ -151,6 +189,42 @@ export function Reports({ data, actions }: { data: Data; actions: ItemActions })
         </p>
       </section>
     </div>
+  );
+}
+
+// Items parked "In use" or "Unknown" long enough that the parking is
+// probably a lie. Hidden entirely while nothing qualifies.
+function LimboPanel({ data, actions }: { data: Data; actions: ItemActions }) {
+  const now = Date.now();
+  const stuck = limboItems(data, now);
+  if (stuck.length === 0) return null;
+  const days = (i: Item) => Math.floor((now - Date.parse(i.updatedAt ?? "")) / 86400000);
+  return (
+    <section className="panel limbo-panel">
+      <PanelHead title="Stuck in limbo" subtitle="In use or lost for over a week — really?" />
+      <div className="rows">
+        {stuck.map((i) => (
+          <div className="item-row" key={i.id}>
+            <span className="object-icon warn">{i.location === "IN_USE" ? "◌" : "?"}</span>
+            <div>
+              <strong>{i.name}</strong>
+              <small>
+                {i.location === "IN_USE" ? "In use" : "Lost"} for {days(i)} days
+              </small>
+            </div>
+            <span className="home-label">Home: {address(data, i.home)}</span>
+            <span className="row-actions">
+              {i.home && (
+                <button className="return-home" onClick={() => actions.onReturnHome(i)}>
+                  ✓ {i.location === "UNKNOWN" ? "Found" : "Returned"}
+                </button>
+              )}
+              <button onClick={() => actions.onMove(i)}>Move</button>
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

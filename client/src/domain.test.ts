@@ -3,6 +3,7 @@ import {
   allowed,
   designIssues,
   greeting,
+  limboItems,
   misplacedItems,
   overloadedPlaces,
   placementOf,
@@ -104,6 +105,23 @@ test("overloaded places exceed their capacity by physical occupancy", () => {
     ],
   };
   expect(overloadedPlaces(d).map((p) => p.id)).toEqual(["tray"]);
+});
+
+test("limbo surfaces items stuck In-use or Unknown for over a week", () => {
+  const now = Date.parse("2026-08-27T12:00:00Z");
+  const old = "2026-08-10T12:00:00Z"; // 17 days ago
+  const recent = "2026-08-26T12:00:00Z"; // yesterday
+  const d = {
+    ...data,
+    items: [
+      item({ id: "stuck-use", lifecycle: "PROJECTS", placement: "NEAR_CUE", location: "IN_USE", updatedAt: old }),
+      item({ id: "stuck-lost", lifecycle: "MOBILE", placement: "NEAR_CUE", location: "UNKNOWN", updatedAt: old }),
+      item({ id: "fresh", lifecycle: "MOBILE", placement: "NEAR_CUE", location: "IN_USE", updatedAt: recent }),
+      item({ id: "at-home", lifecycle: "FIXED", placement: "NEAR_OPEN", home: "shelf", location: "shelf", updatedAt: old }),
+      item({ id: "undated", lifecycle: "MOBILE", placement: "NEAR_CUE", location: "IN_USE" }),
+    ],
+  };
+  expect(limboItems(d, now).map((i) => i.id)).toEqual(["stuck-use", "stuck-lost"]);
 });
 
 test("greeting follows the clock", () => {

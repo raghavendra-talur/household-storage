@@ -40,6 +40,7 @@ export interface Item {
   home: string | null;
   location: Location;
   notes?: string;
+  updatedAt?: string;
 }
 
 export interface Data {
@@ -155,6 +156,19 @@ export function designIssues(data: Data): DesignIssue[] {
       issues.push({ item, severity: "lint", text: "Confirm this item is used in its far room." });
     }
     return issues;
+  });
+}
+
+export const LIMBO_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Items honestly parked "In use" or "Unknown" — but for so long that the
+// parking itself is probably a lie. The same linter spirit, applied to time.
+export function limboItems(data: Data, nowMs: number): Item[] {
+  return data.items.filter((i) => {
+    if (i.location !== "IN_USE" && i.location !== "UNKNOWN") return false;
+    if (!i.updatedAt) return false;
+    const ts = Date.parse(i.updatedAt);
+    return Number.isFinite(ts) && nowMs - ts > LIMBO_AFTER_MS;
   });
 }
 

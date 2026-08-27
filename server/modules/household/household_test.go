@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/raghavendra-talur/household-storage/server/db"
@@ -310,6 +311,36 @@ func TestDeletePlaceOrphansItems(t *testing.T) {
 	}
 	if byID[visitor.ID].Home == nil || byID[visitor.ID].Location != "UNKNOWN" {
 		t.Fatalf("visiting item mishandled: %+v", byID[visitor.ID])
+	}
+}
+
+func TestItemsCarryUpdatedAt(t *testing.T) {
+	ts := newTestServer(t)
+	room := mustCreateRoom(t, ts, "Office", "NEAR")
+	shelf := mustCreatePlace(t, ts, room.ID, "Shelf", "OPEN", 5)
+	item := mustCreateItem(t, ts, map[string]any{
+		"name": "Clock", "lifecycle": "FIXED", "placement": "NEAR_OPEN", "home": shelf.ID,
+	})
+	if item.UpdatedAt == "" {
+		t.Fatal("created item has no updatedAt")
+	}
+	if _, err := time.Parse(time.RFC3339, item.UpdatedAt); err != nil {
+		t.Fatalf("updatedAt %q is not RFC3339: %v", item.UpdatedAt, err)
+	}
+
+	s := getState(t, ts)
+	if s.Items[0].UpdatedAt == "" {
+		t.Fatal("state items have no updatedAt")
+	}
+
+	time.Sleep(10 * time.Millisecond)
+	resp, body := do(t, ts, "PATCH", "/api/v1/items/"+item.ID, map[string]any{"location": "IN_USE"})
+	if resp.StatusCode != 200 {
+		t.Fatalf("update: %d %s", resp.StatusCode, body)
+	}
+	updated := decode[Item](t, body)
+	if !(updated.UpdatedAt > item.UpdatedAt) {
+		t.Fatalf("updatedAt did not advance: %q -> %q", item.UpdatedAt, updated.UpdatedAt)
 	}
 }
 

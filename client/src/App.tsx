@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import * as api from "./api";
 import { pretty, type Data, type Item, type Location, type Place, type Room } from "./domain";
 import { CaptureForm } from "./components/CaptureForm";
+import { TriageForm } from "./components/TriageForm";
 import { Dialog } from "./components/Dialog";
 import { ItemForm, MoveForm, PlaceForm, RoomForm } from "./components/forms";
 import { Items, pageTitle, Places, Reports, type Tab } from "./components/views";
@@ -16,6 +17,7 @@ type DialogState =
   | { kind: "edit-item"; item: Item }
   | { kind: "move"; item: Item }
   | { kind: "capture" }
+  | { kind: "triage" }
   | null;
 
 const TABS: Tab[] = ["items", "places", "reports"];
@@ -37,7 +39,17 @@ export default function App() {
   };
 
   useEffect(() => {
-    const onHash = () => setTabState(tabFromHash());
+    const onHash = () => {
+      // #/capture is a deep link (PWA shortcut / home-screen bookmark)
+      // straight into the Quick Capture dialog over the items tab.
+      if (window.location.hash.replace(/^#\/?/, "") === "capture") {
+        setTabState("items");
+        setDialog({ kind: "capture" });
+      } else {
+        setTabState(tabFromHash());
+      }
+    };
+    onHash();
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -101,6 +113,10 @@ export default function App() {
   const itemActions = {
     onMove: (item: Item) => setDialog({ kind: "move", item }),
     onEdit: (item: Item) => setDialog({ kind: "edit-item", item }),
+    onReturnHome: (item: Item) => {
+      const home = item.home;
+      if (home) mutate(() => api.updateItem(item.id, { location: home }));
+    },
   };
 
   if (!data) {
@@ -196,7 +212,13 @@ export default function App() {
           />
         )}
         {tab === "items" && <Items data={data} query={query} actions={itemActions} />}
-        {tab === "reports" && <Reports data={data} actions={itemActions} />}
+        {tab === "reports" && (
+          <Reports
+            data={data}
+            actions={itemActions}
+            onStartTriage={() => setDialog({ kind: "triage" })}
+          />
+        )}
       </section>
 
       {dialog && (
@@ -206,11 +228,18 @@ export default function App() {
               ? `Move ${dialog.item.name}`
               : dialog.kind === "capture"
                 ? "Quick capture"
-                : dialog.kind.startsWith("edit-")
-                  ? `Edit ${dialog.kind.slice(5)}`
-                  : `Add ${dialog.kind.slice(4)}`
+                : dialog.kind === "triage"
+                  ? "Triage"
+                  : dialog.kind.startsWith("edit-")
+                    ? `Edit ${dialog.kind.slice(5)}`
+                    : `Add ${dialog.kind.slice(4)}`
           }
-          onClose={() => setDialog(null)}
+          onClose={() => {
+            setDialog(null);
+            if (window.location.hash.replace(/^#\/?/, "") === "capture") {
+              window.location.hash = "/items";
+            }
+          }}
         >
           {error && (
             <div className="error-banner in-modal" role="alert">
@@ -256,6 +285,16 @@ export default function App() {
           )}
           {dialog.kind === "move" && (
             <MoveForm data={data} item={dialog.item} onMove={(loc) => moveItem(dialog.item, loc)} />
+          )}
+          {dialog.kind === "triage" && (
+            <TriageForm
+              data={data}
+              onChanged={() => {
+                reload().catch(() => {
+                  // SSE will bring the next refetch
+                });
+              }}
+            />
           )}
           {dialog.kind === "capture" && (
             <CaptureForm

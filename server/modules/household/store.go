@@ -50,6 +50,7 @@ type Item struct {
 	Home      *string `json:"home"`
 	Location  string  `json:"location"`
 	Notes     string  `json:"notes"`
+	UpdatedAt string  `json:"updatedAt"`
 }
 
 type State struct {
@@ -114,14 +115,14 @@ func (s *Store) State() (State, error) {
 		state.Places = append(state.Places, p)
 	}
 
-	irows, err := s.db.Query(`SELECT id, name, lifecycle, placement, home, location, notes FROM items ORDER BY created_at, id`)
+	irows, err := s.db.Query(`SELECT id, name, lifecycle, placement, home, location, notes, updated_at FROM items ORDER BY created_at, id`)
 	if err != nil {
 		return state, err
 	}
 	defer irows.Close()
 	for irows.Next() {
 		var i Item
-		if err := irows.Scan(&i.ID, &i.Name, &i.Lifecycle, &i.Placement, &i.Home, &i.Location, &i.Notes); err != nil {
+		if err := irows.Scan(&i.ID, &i.Name, &i.Lifecycle, &i.Placement, &i.Home, &i.Location, &i.Notes, &i.UpdatedAt); err != nil {
 			return state, err
 		}
 		state.Items = append(state.Items, i)
@@ -302,15 +303,17 @@ func (s *Store) CreateItem(i Item) (Item, error) {
 		return Item{}, err
 	}
 	i.ID = newID()
-	_, err := s.db.Exec(`INSERT INTO items (id, name, lifecycle, placement, home, location, notes) VALUES (?,?,?,?,?,?,?)`,
-		i.ID, i.Name, i.Lifecycle, i.Placement, i.Home, i.Location, i.Notes)
-	return i, err
+	if _, err := s.db.Exec(`INSERT INTO items (id, name, lifecycle, placement, home, location, notes) VALUES (?,?,?,?,?,?,?)`,
+		i.ID, i.Name, i.Lifecycle, i.Placement, i.Home, i.Location, i.Notes); err != nil {
+		return Item{}, err
+	}
+	return s.GetItem(i.ID)
 }
 
 func (s *Store) GetItem(id string) (Item, error) {
 	var i Item
-	err := s.db.QueryRow(`SELECT id, name, lifecycle, placement, home, location, notes FROM items WHERE id=?`, id).
-		Scan(&i.ID, &i.Name, &i.Lifecycle, &i.Placement, &i.Home, &i.Location, &i.Notes)
+	err := s.db.QueryRow(`SELECT id, name, lifecycle, placement, home, location, notes, updated_at FROM items WHERE id=?`, id).
+		Scan(&i.ID, &i.Name, &i.Lifecycle, &i.Placement, &i.Home, &i.Location, &i.Notes, &i.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return Item{}, ErrNotFound
 	}
@@ -329,8 +332,7 @@ func (s *Store) UpdateItem(id string, i Item) (Item, error) {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return Item{}, ErrNotFound
 	}
-	i.ID = id
-	return i, nil
+	return s.GetItem(id)
 }
 
 func (s *Store) DeleteItem(id string) error {

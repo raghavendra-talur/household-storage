@@ -17,6 +17,9 @@ const travels = ["NEAR", "FAR"];
 const cues = ["CUE", "OPEN", "HIDDEN"];
 
 function seed(): Data {
+  // Two items have been "in use"/"lost" long enough to land in the limbo
+  // report, so the demo shows it off.
+  const weeksAgo = (n: number) => new Date(Date.now() - n * 7 * 86400000).toISOString();
   return {
     rooms: [
       { id: "kitchen", name: "Kitchen", travel: "NEAR" },
@@ -37,8 +40,8 @@ function seed(): Data {
       { id: "keys", name: "House keys", lifecycle: "MOBILE", placement: "NEAR_CUE", home: "entry-drop", location: "entry-drop" },
       { id: "scissors", name: "Kitchen scissors", lifecycle: "MOBILE", placement: "NEAR_HIDDEN", home: "kitchen-drawer", location: "office-desk" },
       { id: "taxes", name: "2025 tax documents", lifecycle: "ARCHIVE", placement: "FAR_HIDDEN", home: "basement-bins", location: "basement-bins" },
-      { id: "batteries", name: "AA batteries — pack 1", lifecycle: "SUPPLIES", placement: "FAR_HIDDEN", home: "basement-bins", location: "UNKNOWN" },
-      { id: "lamp", name: "Desk lamp repair", lifecycle: "PROJECTS", placement: "NEAR_CUE", home: "office-desk", location: "IN_USE" },
+      { id: "batteries", name: "AA batteries — pack 1", lifecycle: "SUPPLIES", placement: "FAR_HIDDEN", home: "basement-bins", location: "UNKNOWN", updatedAt: weeksAgo(3) },
+      { id: "lamp", name: "Desk lamp repair", lifecycle: "PROJECTS", placement: "NEAR_CUE", home: "office-desk", location: "IN_USE", updatedAt: weeksAgo(2) },
       { id: "labelmaker", name: "Label maker", lifecycle: "MOBILE", placement: "NEAR_CUE", home: "office-desk", location: "office-desk" },
       { id: "donation", name: "Donation box", lifecycle: "OUTGOING", placement: "FAR_CUE", home: "garage-bay", location: "garage-bay" },
       { id: "yoga", name: "Yoga mat", lifecycle: "FIXED", placement: "NEAR_OPEN", home: "office-shelf", location: "office-shelf" },
@@ -139,14 +142,14 @@ export async function createItem(item: Omit<Item, "id">): Promise<Item> {
   const draft = { ...clone(item) };
   if (!draft.location) draft.location = draft.home ?? "UNKNOWN";
   validateItem(draft);
-  const created: Item = { ...draft, id: newId() };
+  const created: Item = { ...draft, id: newId(), updatedAt: new Date().toISOString() };
   data.items.push(created);
   return clone(created);
 }
 
 export async function updateItem(id: string, patch: Partial<Omit<Item, "id">>): Promise<Item> {
   const item = data.items.find((i) => i.id === id) ?? fail("item not found");
-  const next = { ...item, ...patch };
+  const next = { ...item, ...patch, updatedAt: new Date().toISOString() };
   validateItem(next);
   Object.assign(item, next);
   return clone(item);
