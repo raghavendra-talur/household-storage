@@ -1144,3 +1144,91 @@ button {
   text-decoration: underline;
   font-size: 11px;
 }
+
+/* ── Mobile tuning for the post-rewrite components ──────────────────────── */
+
+@media (max-width: 1000px) {
+  .section-intro {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .table-filters {
+    flex-wrap: wrap;
+  }
+  /* Tablets: drop "Required placement" rather than scroll sideways. */
+  .item-table {
+    grid-template-columns: 1.3fr 0.7fr 1.1fr 1.1fr 60px;
+    min-width: 640px;
+  }
+  .item-table > :nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 650px) {
+  /* Tables collapse to their essential columns instead of scrolling
+     sideways; the hidden details are one tap away in the edit dialog. */
+  .item-table {
+    grid-template-columns: 1.4fr 1fr 48px;
+    min-width: 0;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .item-table > :nth-child(2),
+  .item-table > :nth-child(3),
+  .item-table > :nth-child(4) {
+    display: none;
+  }
+  .place-table {
+    grid-template-columns: 1.3fr 0.9fr 58px;
+    min-width: 0;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .place-table > :nth-child(3),
+  .place-table > :nth-child(4) {
+    display: none;
+  }
+  .place-table-row small {
+    display: none;
+  }
+  .place-table-row > span:first-child {
+    flex-wrap: nowrap;
+  }
+  .add-place-row.in-table {
+    margin: 12px 14px 14px;
+    width: calc(100% - 28px);
+  }
+
+  /* Secondary topbar button (Capture / Add room) shrinks to its glyph,
+     matching the primary's existing treatment. */
+  .top-actions {
+    gap: 8px;
+  }
+  .top-actions .secondary {
+    font-size: 0;
+    padding: 10px 12px;
+  }
+  .top-actions .secondary:first-letter {
+    font-size: 18px;
+  }
+
+  /* Dialogs become bottom sheets. */
+  .modal-backdrop {
+    padding: 0;
+    place-items: end center;
+  }
+  .modal {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .error-banner {
+    margin: 14px 16px 0;
+  }
+  .demo-banner ~ .workspace .topbar {
+    padding-top: 42px;
+    height: auto;
+  }
+}

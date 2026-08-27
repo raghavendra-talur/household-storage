@@ -19,22 +19,14 @@ import {
 import { placeTableRows, type PlaceSortKey } from "../placeTable";
 import { Empty, PanelHead, Stat } from "./bits";
 
-export type Tab = "home" | "places" | "items" | "reports";
+export type Tab = "items" | "places" | "reports";
 
 export interface ItemActions {
   onMove: (item: Item) => void;
   onEdit: (item: Item) => void;
 }
 
-export function Today({
-  data,
-  setTab,
-  actions,
-}: {
-  data: Data;
-  setTab: (tab: Tab) => void;
-  actions: ItemActions;
-}) {
+export function Reports({ data, actions }: { data: Data; actions: ItemActions }) {
   const misplaced = misplacedItems(data);
   const unknown = unknownItems(data);
   const overloaded = overloadedPlaces(data);
@@ -42,6 +34,9 @@ export function Today({
   const errors = issues.filter((i) => i.severity === "error").length;
   const resetCount = misplaced.length + unknown.length;
   const healthy = data.places.length - overloaded.length;
+  const byFullness = [...data.places].sort(
+    (a, b) => occupancy(data, b.id) / b.capacity - occupancy(data, a.id) / a.capacity,
+  );
 
   return (
     <div className="content">
@@ -78,17 +73,12 @@ export function Today({
 
       <div className="two-col">
         <section className="panel">
-          <PanelHead
-            title="Reset list"
-            subtitle="Return, locate, or re-home"
-            action="View reports"
-            onClick={() => setTab("reports")}
-          />
+          <PanelHead title="Reset list" subtitle="Return, locate, or re-home" />
           {resetCount === 0 ? (
             <Empty text="The reset list is clear." />
           ) : (
             <div className="rows">
-              {[...unknown, ...misplaced].slice(0, 5).map((i) => (
+              {[...unknown, ...misplaced].map((i) => (
                 <div className="item-row" key={i.id}>
                   <span className={`object-icon ${i.location === "UNKNOWN" ? "warn" : ""}`}>◇</span>
                   <div>
@@ -106,9 +96,9 @@ export function Today({
         </section>
 
         <section className="panel">
-          <PanelHead title="Capacity pulse" subtitle="What’s in each place right now" />
+          <PanelHead title="Capacity pulse" subtitle="Fullest places first" />
           <div className="capacity-list">
-            {data.places.slice(0, 5).map((p) => {
+            {byFullness.map((p) => {
               const count = occupancy(data, p.id);
               const pct = Math.min(100, (count / p.capacity) * 100);
               return (
@@ -131,6 +121,27 @@ export function Today({
           </div>
         </section>
       </div>
+
+      <section className="panel">
+        <PanelHead title="Design checks" subtitle="Exact home match and lifecycle legality" />
+        {issues.length ? (
+          issues.map((x, n) => (
+            <div className="issue" key={n}>
+              <div>
+                <b>{x.item.name}</b>
+                <small>{x.text}</small>
+              </div>
+              <span className={x.severity}>
+                <button className="issue-fix" onClick={() => actions.onEdit(x.item)}>
+                  {x.severity}
+                </button>
+              </span>
+            </div>
+          ))
+        ) : (
+          <Empty text="All homes pass their design checks." />
+        )}
+      </section>
 
       <section className="principle">
         <span>✦</span>
@@ -333,85 +344,8 @@ export function Items({
   );
 }
 
-export function Reports({ data, actions }: { data: Data; actions: ItemActions }) {
-  const misplaced = misplacedItems(data);
-  const unknown = unknownItems(data);
-  const overloaded = overloadedPlaces(data);
-  const issues = designIssues(data);
-  const groups = [
-    { title: "Unknown", subtitle: "Lost things to locate", rows: unknown, tone: "bad" },
-    { title: "Misplaced", subtitle: "Away from home, but not in use", rows: misplaced, tone: "warn" },
-  ];
-  return (
-    <div className="content">
-      <div className="section-intro">
-        <div>
-          <h2>What needs attention</h2>
-          <p>State checks run continuously. Design checks run whenever the system changes.</p>
-        </div>
-      </div>
-      <div className="report-grid">
-        {groups.map((g) => (
-          <section className="panel" key={g.title}>
-            <PanelHead title={g.title} subtitle={g.subtitle} />
-            <div className="rows">
-              {g.rows.length ? (
-                g.rows.map((i) => (
-                  <div className="item-row" key={i.id}>
-                    <span className={`object-icon ${g.tone}`}>◇</span>
-                    <div>
-                      <strong>{i.name}</strong>
-                      <small>Home: {address(data, i.home)}</small>
-                    </div>
-                    <button onClick={() => actions.onMove(i)}>Move</button>
-                  </div>
-                ))
-              ) : (
-                <Empty text={`No ${g.title.toLowerCase()} items.`} />
-              )}
-            </div>
-          </section>
-        ))}
-        <section className="panel">
-          <PanelHead title="Capacity" subtitle="Occupancy exceeds the place limit" />
-          {overloaded.length ? (
-            overloaded.map((p) => (
-              <div className="issue" key={p.id}>
-                <b>{p.name}</b>
-                <span>Over capacity</span>
-              </div>
-            ))
-          ) : (
-            <Empty text="Every place is within capacity." />
-          )}
-        </section>
-        <section className="panel">
-          <PanelHead title="Design checks" subtitle="Exact home match and lifecycle legality" />
-          {issues.length ? (
-            issues.map((x, n) => (
-              <div className="issue" key={n}>
-                <div>
-                  <b>{x.item.name}</b>
-                  <small>{x.text}</small>
-                </div>
-                <span className={x.severity}>
-                  <button className="issue-fix" onClick={() => actions.onEdit(x.item)}>
-                    {x.severity}
-                  </button>
-                </span>
-              </div>
-            ))
-          ) : (
-            <Empty text="All homes pass their design checks." />
-          )}
-        </section>
-      </div>
-    </div>
-  );
-}
-
 export function pageTitle(tab: Tab, hour: number): string {
-  if (tab === "home") return greeting(hour);
+  if (tab === "items") return greeting(hour); // the landing tab keeps the warm hello
   if (tab === "places") return "Rooms & places";
   return pretty(tab);
 }

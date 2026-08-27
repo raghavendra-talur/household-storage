@@ -4,7 +4,7 @@ import { pretty, type Data, type Item, type Location, type Place, type Room } fr
 import { CaptureForm } from "./components/CaptureForm";
 import { Dialog } from "./components/Dialog";
 import { ItemForm, MoveForm, PlaceForm, RoomForm } from "./components/forms";
-import { Items, pageTitle, Places, Reports, Today, type Tab } from "./components/views";
+import { Items, pageTitle, Places, Reports, type Tab } from "./components/views";
 import { designIssues, misplacedItems, overloadedPlaces, unknownItems } from "./domain";
 
 type DialogState =
@@ -18,11 +18,11 @@ type DialogState =
   | { kind: "capture" }
   | null;
 
-const TABS: Tab[] = ["home", "places", "items", "reports"];
+const TABS: Tab[] = ["items", "places", "reports"];
 
 function tabFromHash(): Tab {
   const name = window.location.hash.replace(/^#\/?/, "");
-  return (TABS as string[]).includes(name) ? (name as Tab) : "home";
+  return (TABS as string[]).includes(name) ? (name as Tab) : "items";
 }
 
 export default function App() {
@@ -33,7 +33,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   const setTab = (next: Tab) => {
-    window.location.hash = next === "home" ? "/" : `/${next}`;
+    window.location.hash = `/${next}`;
   };
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export default function App() {
         </div>
       )}
       <aside className="sidebar">
-        <button className="brand" onClick={() => setTab("home")}>
+        <button className="brand" onClick={() => setTab("items")}>
           <span className="brand-mark">H</span>
           <span>
             Homestead<small>Everything has a home.</small>
@@ -135,8 +135,8 @@ export default function App() {
         <nav aria-label="Primary navigation">
           {TABS.map((key) => (
             <button key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}>
-              <span>{key === "home" ? "⌂" : key === "places" ? "▦" : key === "items" ? "◇" : "✓"}</span>
-              {key === "home" ? "Today" : pretty(key)}
+              <span>{key === "places" ? "▦" : key === "items" ? "◇" : "✓"}</span>
+              {pretty(key)}
               {key === "reports" && needsAttention > 0 && <b>{needsAttention}</b>}
             </button>
           ))}
@@ -186,7 +186,6 @@ export default function App() {
           </div>
         )}
 
-        {tab === "home" && <Today data={data} setTab={setTab} actions={itemActions} />}
         {tab === "places" && (
           <Places
             data={data}
